@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: UC AVM - Used car price prediction API
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+
+Resources:
+  PredictFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.lambda_handler
+      Runtime: python3.11
+      CodeUri: .
+      Environment:
+        Variables:
+          MODEL_PATH: /opt/ml/model/avm_model.joblib
+      Events:
+        Predict:
+          Type: Api
+          Properties:
+            Path: /predict
+            Method: post
+        Health:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: get
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

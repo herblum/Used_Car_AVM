@@ -1,0 +1,49 @@
+name: Retrain model
+
+on:
+  schedule:
+    # Every 2 weeks on Monday at 03:00 UTC
+    - cron: "0 3 1,15 * *"
+  workflow_dispatch:
+    inputs:
+      items:
+        description: "Number of listings to scrape"
+        default: "5000"
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r ml_scraper/requirements.txt
+          pip install -r ml_model/requirements.txt
+
+      - name: Run pipeline
+        env:
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+        run: |
+          python pipeline/run_pipeline.py --items ${{ inputs.items || '5000' }}
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: avm-model-${{ github.run_number }}
+          path: ml_model/artifacts/avm_model.joblib
+          retention-days: 90
+
+      - name: Upload database
+        uses: actions/upload-artifact@v4
+        with:
+          name: avm-db-${{ github.run_number }}
+          path: db/avm.db
+          retention-days: 90

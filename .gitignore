@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Database
+db/avm.db
+db/avm.db-wal
+db/avm.db-shm
+
+# ML artifacts
+ml_model/artifacts/
+
+# Scraper data
+ml_scraper/data/*.csv
+ml_scraper/data/raw/
+ml_scraper/data/checkpoint.json
+
+# Node / Expo
+mobile/node_modules/
+mobile/.expo/
+
+# OS
+.DS_Store
