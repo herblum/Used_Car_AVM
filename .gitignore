@@ -22,3 +22,6 @@ mobile/.expo/
 
 # OS
 .DS_Store
+
+# Claude
+.claude/
