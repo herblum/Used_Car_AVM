@@ -46,17 +46,17 @@ def prepare_features(df: pd.DataFrame) -> pd.DataFrame:
     - trim_level is extracted from the version column when available (training);
       at inference time the column is absent and LightGBM handles it as missing.
     """
-    from trim_extractor import extract_trim
-
     df = df.copy()
 
-    if "version" in df.columns:
-        df["trim_level"] = df.apply(
-            lambda row: extract_trim(row.get("version"), row.get("marca"), row.get("modelo")),
-            axis=1,
-        )
-    elif "trim_level" not in df.columns:
-        df["trim_level"] = None
+    if "trim_level" not in df.columns:
+        if "version" in df.columns:
+            from trim_extractor import extract_trim
+            df["trim_level"] = df.apply(
+                lambda row: extract_trim(row.get("version"), row.get("marca"), row.get("modelo")),
+                axis=1,
+            )
+        else:
+            df["trim_level"] = None
 
     X = df[ALL_FEATURES].copy()
     for col in NUMERIC_FEATURES:

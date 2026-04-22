@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS listings (
     marca             TEXT,
     modelo            TEXT,
     version           TEXT,
+    trim_level        TEXT,
     anio              INTEGER,
     kilometros        REAL,
     condicion         TEXT,

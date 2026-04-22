@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { predictPrice, CarFeatures } from "../lib/api";
+import { predictPrice, getTrimOptions, CarFeatures } from "../lib/api";
 
 const FUEL_OPTIONS = ["Nafta", "Diésel", "GNC", "Híbrido", "Eléctrico"];
 const TRANSMISSION_OPTIONS = ["Manual", "Automática", "CVT"];
@@ -61,6 +61,20 @@ export default function FormScreen() {
   const [transmision, setTransmision] = useState("");
   const [tipoCarroceria, setTipoCarroceria] = useState("");
   const [moneda, setMoneda] = useState("USD");
+  const [trim, setTrim] = useState("");
+  const [trimOptions, setTrimOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!marca) {
+      setTrimOptions([]);
+      setTrim("");
+      return;
+    }
+    const timer = setTimeout(() => {
+      getTrimOptions(marca).then(setTrimOptions);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [marca]);
 
   async function handleSubmit() {
     if (!marca || !anio) {
@@ -79,6 +93,7 @@ export default function FormScreen() {
       tipo_carroceria: tipoCarroceria || undefined,
       moneda,
       condicion: "used",
+      trim_level: trim || undefined,
     };
 
     setLoading(true);
@@ -132,6 +147,9 @@ export default function FormScreen() {
 
       <Picker label="Combustible" options={FUEL_OPTIONS} value={combustible} onChange={setCombustible} />
       <Picker label="Transmisión" options={TRANSMISSION_OPTIONS} value={transmision} onChange={setTransmision} />
+      {trimOptions.length > 0 && (
+        <Picker label="Versión / Trim" options={trimOptions} value={trim} onChange={setTrim} />
+      )}
       <Picker label="Carrocería" options={BODY_OPTIONS} value={tipoCarroceria} onChange={setTipoCarroceria} />
       <Picker label="Moneda" options={CURRENCY_OPTIONS} value={moneda} onChange={setMoneda} />
 

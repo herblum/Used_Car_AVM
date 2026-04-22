@@ -16,6 +16,7 @@ export interface CarFeatures {
   moneda?: string;
   condicion?: string;
   es_concesionario?: number;
+  trim_level?: string;
 }
 
 export interface PriceRange {
@@ -23,6 +24,16 @@ export interface PriceRange {
   price_mid: number;
   price_high: number;
   currency: string;
+}
+
+export async function getTrimOptions(marca: string): Promise<string[]> {
+  try {
+    const res = await fetch(`${API_BASE}/trims/${encodeURIComponent(marca.toLowerCase())}`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
 }
 
 export async function predictPrice(features: CarFeatures): Promise<PriceRange> {

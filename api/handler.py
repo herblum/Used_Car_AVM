@@ -16,6 +16,7 @@ from mangum import Mangum
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "ml_model"))
 
 from predict import predict  # noqa: E402
+from trim_extractor import KNOWN_TRIMS  # noqa: E402
 
 app = FastAPI(title="UC AVM", description="Used car price prediction API")
 
@@ -36,6 +37,7 @@ class CarFeatures(BaseModel):
     moneda: str | None = Field(None, example="USD")
     condicion: str | None = Field(None, example="used")
     es_concesionario: int | None = Field(None, example=0)
+    trim_level: str | None = Field(None, example="Highline")
 
 
 class PriceRange(BaseModel):
@@ -72,6 +74,11 @@ def predict_price(car: CarFeatures) -> PriceRange:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return PriceRange(**result)
+
+
+@app.get("/trims/{marca}")
+def get_trims(marca: str) -> list[str]:
+    return KNOWN_TRIMS.get(marca.strip().lower(), [])
 
 
 @app.get("/health")

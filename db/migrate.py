@@ -4,7 +4,11 @@ import argparse
 import csv
 import logging
 import sqlite3
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "ml_model"))
+from trim_extractor import extract_trim  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
@@ -16,7 +20,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "ml_scraper" / "data"
 
 # Columns that exist in the DB schema (excluding auto-generated ones)
 DB_COLUMNS = [
-    "item_id", "source_url", "marca", "modelo", "version", "anio",
+    "item_id", "source_url", "marca", "modelo", "version", "trim_level", "anio",
     "kilometros", "condicion", "vehiculo_edad", "cilindrada_cc",
     "combustible", "transmision", "traccion", "tipo_carroceria",
     "puertas", "color", "precio", "moneda", "es_concesionario",
@@ -30,7 +34,27 @@ def init_db(db_path: Path = DB_PATH) -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     schema_sql = SCHEMA_PATH.read_text()
     conn.executescript(schema_sql)
+    # Add trim_level column to existing databases that predate the schema change
+    try:
+        conn.execute("ALTER TABLE listings ADD COLUMN trim_level TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
     return conn
+
+
+def backfill_trim_level(conn: sqlite3.Connection) -> int:
+    """Populate trim_level for existing rows that have version but no trim_level."""
+    rows = conn.execute(
+        "SELECT id, version, marca, modelo FROM listings WHERE trim_level IS NULL AND version IS NOT NULL"
+    ).fetchall()
+    for row_id, version, marca, modelo in rows:
+        conn.execute(
+            "UPDATE listings SET trim_level = ? WHERE id = ?",
+            (extract_trim(version, marca, modelo), row_id),
+        )
+    conn.commit()
+    return len(rows)
 
 
 def _coerce(value: str, column: str) -> object:
@@ -73,6 +97,11 @@ def migrate_csv(csv_path: Path, conn: sqlite3.Connection) -> int:
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            # Derive trim_level from version if the CSV doesn't already have it
+            if not row.get("trim_level"):
+                row["trim_level"] = extract_trim(
+                    row.get("version"), row.get("marca"), row.get("modelo")
+                )
             values = [_coerce(row.get(col, ""), col) for col in DB_COLUMNS]
             conn.execute(sql, values)
             count += 1
@@ -114,6 +143,10 @@ def main() -> None:
         n = migrate_csv(csv_path, conn)
         log.info("Upserted %d rows from %s", n, csv_path.name)
         total += n
+
+    backfilled = backfill_trim_level(conn)
+    if backfilled:
+        log.info("Backfilled trim_level for %d existing rows", backfilled)
 
     row_count = conn.execute("SELECT COUNT(*) FROM listings").fetchone()[0]
     log.info("Total rows in database: %d (upserted %d this run)", row_count, total)
