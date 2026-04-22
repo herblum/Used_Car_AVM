@@ -9,6 +9,7 @@ import logging
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
 
 from features import ALL_FEATURES, ARS_TO_USD, prepare_features
@@ -54,10 +55,10 @@ def predict(features: dict, model_path: Path = MODEL_PATH) -> dict:
     df = pd.DataFrame([row])
     X = prepare_features(df)
 
-    # Model predicts in USD
-    low = max(0.0, float(models["q10"].predict(X)[0]))
-    mid = max(0.0, float(models["q50"].predict(X)[0]))
-    high = max(0.0, float(models["q90"].predict(X)[0]))
+    # Model predicts log(USD); exponentiate back to USD
+    low  = max(0.0, float(np.exp(models["q10"].predict(X)[0])))
+    mid  = max(0.0, float(np.exp(models["q50"].predict(X)[0])))
+    high = max(0.0, float(np.exp(models["q90"].predict(X)[0])))
 
     # Convert to requested currency
     if currency == "ARS":

@@ -100,7 +100,7 @@ def cross_validate(X: pd.DataFrame, y: pd.Series) -> None:
     y_pred_all = np.concatenate(all_y_pred)
 
     log.info("--- %d-fold CV on training set (q50) ---", N_FOLDS)
-    evaluate_model(y_true_all, y_pred_all, label=f"CV-{N_FOLDS}fold")
+    evaluate_model(np.exp(y_true_all), np.exp(y_pred_all), label=f"CV-{N_FOLDS}fold")
 
 
 def train(db_path: Path = DB_PATH, output_dir: Path = MODEL_DIR) -> Path:
@@ -117,7 +117,7 @@ def train(db_path: Path = DB_PATH, output_dir: Path = MODEL_DIR) -> Path:
     df = load_data(db_path)
 
     X = prepare_features(df)
-    y = df[TARGET]
+    y = np.log(df[TARGET])
 
     # 1. Hold out test set
     X_train, X_test, y_train, y_test = train_test_split(
@@ -142,7 +142,7 @@ def train(db_path: Path = DB_PATH, output_dir: Path = MODEL_DIR) -> Path:
     log.info("--- Held-out test set evaluation ---")
     for label, model in models.items():
         y_pred = model.predict(X_test)
-        evaluate_model(y_test, y_pred, label=f"test-{label}")
+        evaluate_model(np.exp(y_test), np.exp(y_pred), label=f"test-{label}")
 
     # 5. Save
     output_dir.mkdir(parents=True, exist_ok=True)
