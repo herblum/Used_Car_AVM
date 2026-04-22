@@ -5,7 +5,7 @@ import os
 
 # ── Firecrawl ─────────────────────────────────
 # Get your key at https://app.firecrawl.dev
-FIRECRAWL_API_KEY: str = os.getenv("FIRECRAWL_API_KEY", "REDACTED")
+FIRECRAWL_API_KEY: str = os.environ["FIRECRAWL_API_KEY"]
 
 # ── MercadoLibre ──────────────────────────────
 # ML caps pagination at ~2000 results per search URL (~42 pages × 48 items).
