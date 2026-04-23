@@ -495,11 +495,26 @@ def main() -> None:
     output      = args.output or f"data/car_{rows}rows.csv"
     batch_size  = args.batch_size
     concurrency = max(1, min(args.concurrency, 50))   # clamp to [1, 50]
-    # Auto-calculate pages: 48 items/page, fetch 20% extra as URL buffer
-    n_pages     = args.pages or max(1, math.ceil(rows * 1.2 / config.ITEMS_PER_PAGE))
+
+    # Load scraped registry early so Phase 1 targets enough UNSCRAPED URLs.
+    # Without this, --rows N only fetches N * 1.2 total URLs regardless of how
+    # many are already done, leaving far fewer than N new rows for Phase 2.
+    scraped_path = Path(config.SCRAPED_URLS_FILE)
+    already_scraped: set[str] = set()
+    if scraped_path.exists():
+        try:
+            already_scraped = set(json.loads(scraped_path.read_text()))
+        except json.JSONDecodeError:
+            pass
+
+    # Need rows * 1.2 UNSCRAPED URLs in the pool, so total pool must be larger
+    n_pages = args.pages or max(1, math.ceil(
+        (rows * 1.2 + len(already_scraped)) / config.ITEMS_PER_PAGE
+    ))
 
     log.info("═══ MercadoLibre car scraper ═══")
     log.info("Target rows  : %d", rows)
+    log.info("Already done : %d (will skip)", len(already_scraped))
     log.info("Output file  : %s", output)
     log.info("Concurrency  : %d", concurrency)
     log.info("Batch size   : %d", batch_size)
@@ -552,8 +567,12 @@ def main() -> None:
             )
             return
 
-    target_urls = item_urls[:rows]
-    log.info("Using %d URLs (of %d collected)", len(target_urls), len(item_urls))
+    unscraped   = [u for u in item_urls if u not in already_scraped]
+    target_urls = unscraped[:rows]
+    log.info(
+        "Using %d unscraped URLs (of %d collected, %d already done)",
+        len(target_urls), len(item_urls), len(already_scraped),
+    )
 
     # ── Phase 2 ──────────────────────────────
     log.info("Phase 2 — scraping item pages → %s", output)

@@ -2,6 +2,9 @@
 #  config.py — MercadoLibre car scraper config
 # ─────────────────────────────────────────────
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ── Firecrawl ─────────────────────────────────
 # Get your key at https://app.firecrawl.dev
