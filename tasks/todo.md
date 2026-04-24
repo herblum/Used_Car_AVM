@@ -88,11 +88,11 @@ Design a minimalist, scalable architecture for a mobile app that:
 
 **Choice**: LightGBM with native categorical support
 **Why**:
-- Tabular data with ~16 features → tree-based models dominate this domain
+- Tabular data with 17 features → tree-based models dominate this domain
 - LightGBM handles categoricals natively (no encoding needed) — better for high-cardinality features like `modelo` (71+ values)
 - Handles NaN natively — no imputer needed
 - Faster training than XGBoost (histogram-based, leaf-wise growth)
-- Model serialized as `.joblib` file (~3 MB) — tiny, loads in milliseconds
+- Model serialized as `.joblib` file (~3.6 MB) — tiny, loads in milliseconds
 - No GPU needed for inference
 
 **Alternatives rejected**:
@@ -109,12 +109,31 @@ Design a minimalist, scalable architecture for a mobile app that:
 - Mislabeled currencies corrected (any price > 500K labeled as USD → fixed to ARS)
 - IQR-based outlier filtering on USD-normalized prices
 - Derived features (`vehiculo_edad`, `km_por_anio`) computed server-side, not user-input
+- Target log-transformed (`y = log(price)`) before training; predictions are exponentiated back
 
-**Current metrics (8.5K rows)**:
-- R² = 0.81, MAE = $2,822, MAPE = 32.8% on held-out test
-- 4/6 mid-range test cars fell within predicted range
+**Trim level extraction** (`trim_extractor.py`):
+- Extracts vehicle trim level (e.g., "Comfortline", "Titanium", "SRV") from the `version` string
+- Three-tier strategy: brand-specific dictionary lookup → fallback tokenization → None (LightGBM handles missing natively)
+- `trim_level` is a categorical feature passed to LightGBM at both training and inference time
 
-**Model artifact**: Single `.joblib` file (~3 MB) containing 3 LightGBM models (q10, q50, q90).
+**Features (17 total)**:
+- Numeric (7): `anio`, `kilometros`, `vehiculo_edad`, `cilindrada_cc`, `puertas`, `km_por_anio`, `es_concesionario`
+- Categorical (10): `marca`, `modelo`, `condicion`, `combustible`, `transmision`, `traccion`, `tipo_carroceria`, `color`, `provincia`, `trim_level`
+
+**Current metrics (16,952 rows after IQR filter, from 18,328 in DB, retrained Apr 23 2026)**:
+
+| Metric | Baseline (8.5K rows, no trim) | Current — q50 (16.9K rows + trim_level) |
+|--------|-------------------------------|------------------------------------------|
+| R²     | 0.81                          | **0.87**                                 |
+| MAE    | $2,822                        | **$2,054**                               |
+| MAPE   | 32.8%                         | **17.7%**                                |
+
+- q10 model: MAE=$3,553, R²=0.667, MAPE=19.0%
+- q90 model: MAE=$3,330, R²=0.777, MAPE=35.0%
+- 5-fold CV (q50 on training set): MAE=$2,102, R²=0.871
+- Improvements driven by: 2× more data + `trim_level` feature
+
+**Model artifact**: Single `.joblib` file (~3.6 MB) containing 3 LightGBM models (q10, q50, q90).
 
 ---
 

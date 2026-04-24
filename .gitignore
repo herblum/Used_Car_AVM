@@ -16,6 +16,8 @@ ml_model/artifacts/
 ml_scraper/data/*.csv
 ml_scraper/data/raw/
 ml_scraper/data/checkpoint.json
+ml_scraper/data/item_urls.txt
+ml_scraper/data/scraped_urls.json
 
 # Node / Expo
 mobile/node_modules/

@@ -19,6 +19,7 @@
 - Write rules for yourself that prevent the same mistake
 - Ruthlessly iterate on these lessons until mistake rate drops
 - Review lessons at session start for relevant project
+- Read 'tasks/todo.md' at session start to understand current tasks and project state
 
 ### 4. Verification Before Done
 
