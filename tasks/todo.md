@@ -315,6 +315,7 @@ On user request (real-time):
 - [x] 5. Build Expo mobile app — `mobile/app/index.tsx` (form), `mobile/app/results.tsx` (results), `mobile/lib/api.ts`
 - [x] 6. Set up GitHub Actions pipeline — `pipeline/run_pipeline.py`, `.github/workflows/retrain.yml` (biweekly cron)
 - [x] 7. End-to-end testing — passed on 8.5K rows after IQR outlier filtering + currency normalization (R²=0.81, MAE=$2,822, MAPE=32.8%). Will improve with 100K rows.
+- [ ] 8. Hyperparameter tuning — `ml_model/tune.py` (Optuna, 75 trials, ~30 min). Target: q50 MAE < $2,054. After run: paste best params into `_build_model()` in `train.py` and retrain.
 
 ---
 
